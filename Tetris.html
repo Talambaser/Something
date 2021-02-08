@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Tetris</title>
+		<link rel="stylesheet" href="Proekat\src\MainTheme.css">
+		<style>
+			canvas{
+				background:#006699;
+			}
+		</style>
+	</head>
+	<body id="body">
+		<canvas height="340" width="200"></canvas>
+		<script>
+			var canvas = document.querySelector("canvas");							// Referenca za canvas i surface   // Standardno
+			var surface = canvas.getContext("2d");
+			
+			var polozaj = 3;														// Kako je figura rotirana
+			var y = 0;																// Udaljenost od vrha ekrana
+			var x = 0;																// Udaljenost od leve ivice
+			var kfc1 = 0;															// Sluze da se for petlja po potrebi u nazad odvija
+			var kfc2 = 0;
+			var figuraIndex = 4;													// Indeks u nizu figura
+			var sirina = 0;															// Koliko je siroka figura u datom polozaju
+			var hendikep = 0;														// Fino podesavanje
+			// Mozda bude potreban i hendikep za y koordinatu da figura ne bi setala gore dole....... 
+			
+			window.addEventListener("keydown", keydownHandler, false);				// Slusaci za tastaturu
+			
+			function keydownHandler(){
+				switch(event.keyCode){
+					case 32: polozaj = ++polozaj > 3 ? 0:polozaj; if( x - hendikep <= -1) x = 0; break; // Vrti od nula do 3 polozaje i neda da x bude negativno
+					case 68: if(mozeDesno()) x++; break;
+					case 65: if(x > 0 - hendikep && mozeLevo()) x--; break;		// Ogranicava levo
+					case 87: figuraIndex = ++figuraIndex > 5 ? 0 : figuraIndex; break; // Vrti figue od 0 do 5 (jedna fali)
+					default: console.log(event.keyCode + ' default case'); return;
+				}
+				//console.log('figuraIndex: ' + figuraIndex);
+				render();
+			}
+
+			
+			
+			
+		//	surface.fillStyle="white";
+		//	surface.fillRect(20,20,20,20);
+			
+			var igra = [											// Pozadina prva kordinata gore dole druga levo desno
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0,0]
+			];
+			
+			// figure
+			var f = [
+				[0,0,0,0],
+				[0,0,0,0],
+				[0,0,0,0],
+				[0,0,0,0]
+			];
+			
+			var f1 = [
+				[0,0,1,0],
+				[0,0,1,0],
+				[0,0,1,0],
+				[0,0,1,0]
+			];
+			var f2 = [
+				[1,1,0],
+				[0,1,1],
+				[0,0,0]
+			];
+			
+			var f3 = [
+				[0,1,0],
+				[1,1,1],
+				[0,0,0]
+			];
+			
+			var f4 = [
+				[1,1],
+				[1,1]
+			];
+			
+			var f5 = [
+				[0,0,0],
+				[1,1,1],
+				[0,0,1],
+			];
+			
+			var f6 = [
+				[0,0,0],
+				[1,1,1],
+				[1,0,0],
+			];
+			
+			var figura = [f1,f2,f3,f4,f5,f6];
+			
+			function render(){
+				hendikep = 0;
+				console.log('renderovan');
+				if ((figuraIndex == 4 && polozaj == 3) ||						// Za koje slucajeve postoji hendikep
+				(figuraIndex == 2 && polozaj == 1) ||
+				(figuraIndex == 5 && polozaj == 3) ||
+				(figuraIndex == 0 && polozaj == 2) ||
+				(figuraIndex == 1 && polozaj == 1 )) hendikep = 1;
+				if (figuraIndex == 0 && polozaj == 0) hendikep = 2;
+				
+				switch(polozaj){
+					case 0: kfc1 = 0; kfc2 = 0; break;							// Koeficijent nije dva nego duzina niza (length)
+					case 1: kfc1 = figura[figuraIndex].length - 1; kfc2 = 0; break;
+					case 2: kfc1 = figura[figuraIndex].length - 1; kfc2 = figura[figuraIndex].length - 1; break;
+					case 3: kfc1 = 0; kfc2 = figura[figuraIndex].length - 1; break;
+				}
+				surface.clearRect(0,0,canvas.width,canvas.height);			// bilo bi lepo da cisti samo figuru a ne ceo ekrana
+				
+				/* Rotacija figure i cuvanje u privremenu */
+								
+				if(polozaj == 0 || polozaj == 2){
+					for(var i = 0; i < figura[figuraIndex].length; i++)
+						for(var j = 0; j < figura[figuraIndex].length; j++){
+							//if(figura[figuraIndex][Math.abs(kfc1 - i)][Math.abs(kfc2 - j)] == 1){
+								//surface.fillStyle="white";
+								//surface.fillRect((x + j) * 20 + 1,(y + i) * 20 + 1,18,18);
+								// Get edge
+							//}
+							f[i][j] = figura[figuraIndex][Math.abs(kfc1 - i)][Math.abs(kfc2 - j)];
+						}
+				}
+				else if(polozaj == 1 || polozaj == 3){
+					for(var i = 0; i < figura[figuraIndex].length; i++)
+						for(var j = 0; j < figura[figuraIndex].length; j++){
+							//if(figura[figuraIndex][Math.abs(kfc1 - j)][Math.abs(kfc2 - i)] == 1){
+								//surface.fillStyle="white";
+								//surface.fillRect((x + j) * 20 + 1,(y + i) * 20 + 1,18,18);
+								// Get edge
+							//}
+							f[j][i] = figura[figuraIndex][Math.abs(kfc1 - i)][Math.abs(kfc2 - j)];
+						}
+				}
+				
+				sirina = 0;														// Odredjivanje desne granice
+				var pocetak = 4, kraj = 0;
+				for(var i = 0; i < figura[figuraIndex].length; i++)
+						for(var j = 0; j < figura[figuraIndex].length; j++){
+							if(f[i][j] == 1){
+								pocetak = j < pocetak ? j : pocetak;
+								kraj = j > kraj ? j : kraj;
+							}
+						}
+				//console.log("pocetak: " + pocetak + " kraj:" + kraj);
+				sirina = kraj - pocetak + 1 + hendikep;
+				crtaj();
+			}
+			
+			render();
+			
+			function crtaj(){
+			
+				surface.fillStyle="white";
+				
+				for(i = 0; i < igra.length; i++)								// crta pozadinu 
+					for(j = 0; j < igra[i].length; j++){
+						if(igra[i][j])
+							surface.fillRect(j * 20 + 1,i * 20 + 1,18,18);
+					}
+				if (x + sirina > 10) x = 10 - sirina;
+				for(i = 0; i < figura[figuraIndex].length; i++)
+					for(j = 0; j < figura[figuraIndex].length; j++){				// Ovo je isto u obe for petlje zato sto je kvadrat
+						if(f[i][j])
+							surface.fillRect((x + j) * 20 + 1,(i + y) * 20 + 1,18,18);
+					}
+			}
+			
+			var interval = setInterval('update()',333);
+			
+			function update(){
+			// Ovde negde sad provera pa end new ako ne moze dalje dole
+				for(i = 0; i < figura[figuraIndex].length; i++)
+					for(j = 0; j < figura[figuraIndex].length; j++){				// 
+						if(f[i][j]){
+								try{
+									if(igra[y + i + 1][x + j] != 0){
+										// Ovde se poziva stvaranje novog elementa a ovaj se prepisuje u igru[][];
+										console.log('Radi if');
+									startNew();
+									return;
+									}
+								}
+								catch(err){
+									console.log('Radi catch');
+									startNew();
+									return;
+								}
+							}	
+						}
+
+				y++;
+				render();
+			}
+		
+			function startNew(){
+			
+				
+			
+				for(i = 0; i < figura[figuraIndex].length; i++)
+					for(j = 0; j < figura[figuraIndex].length; j++){				// Ovo je isto u obe for petlje zato sto je kvadrat
+						if(f[i][j])
+							//surface.fillRect((x + j) * 20 + 1,(i + y) * 20 + 1,18,18);
+							igra[i + y][j + x] = f[i][j];
+					}
+					
+				checkLines();
+					
+				f = [
+				[0,0,0,0],
+				[0,0,0,0],
+				[0,0,0,0],
+				[0,0,0,0]
+			];
+				figuraIndex = random(5);
+				x = 3;
+				y = 0;
+				polozaj = 0;
+				render();
+			}
+			function random(opseg){																/* Funkcija daje random broj u zadatom opsegu */
+					do {
+						var broj = Math.round(Math.random()*(opseg+2));
+					} while (broj == 0 || broj >= opseg+1)
+					return broj - 1;
+			}
+			
+			function mozeDesno(){
+				for(i = 0; i < f.length; i++)
+					for(j = 0; j < f[i].length; j++){
+						if(f[i][j] == 1){
+							if(igra[y + i][x + j + 1] == 1)
+								return false;
+						}
+					}
+				return true;
+			}
+			
+			function mozeLevo(){
+				for(i = 0; i < f.length; i++)
+					for(j = 0; j < f[i].length; j++){
+						if(f[i][j] == 1)
+							if(igra[y + i][x + j - 1] == 1)
+								return false;
+					}
+				return true;
+			}
+			
+			function checkLines(){
+				var line = 0;
+				for(inner = 0; inner < 17; inner++){
+					for(outer = 0; outer < 10; outer++){
+						if(igra[inner][outer] == 1){
+							line++;
+						}
+					}
+					if(line == 10){
+						igra[inner] = [0,0,0,0,0,0,0,0,0,0];
+						for(q = inner; q > 0; q--){
+							console.log('q = ' + q);
+							igra[q] = igra[q - 1];
+							igra[q - 1] = [0,0,0,0,0,0,0,0,0,0];
+						}
+					}
+					line = 0;
+				}	
+			}
+			
+		</script>
+	</body>
+</html>
